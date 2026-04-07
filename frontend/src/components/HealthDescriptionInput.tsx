@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { DescriptionFeaturesChecklist } from "./DescriptionFeaturesChecklist";
 import { MaterialIcon } from "./MaterialIcon";
+import { DEMO_SAMPLE_TEXT } from "@/lib/mock-demo-extraction";
 import { EXTRACTION_STORAGE_KEY, type ExtractionPayload } from "@/lib/patient-extraction";
 
 const MAX_WORDS = 100;
@@ -22,7 +23,7 @@ function truncateToWordLimit(text: string, maxWords: number): string {
 
 export function HealthDescriptionInput() {
   const router = useRouter();
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(DEMO_SAMPLE_TEXT);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const words = countWords(value);
@@ -156,11 +157,8 @@ export function HealthDescriptionInput() {
           {loading ? "Extracting…" : "Continue to verify"}
         </button>
         <p className="mt-2 text-center text-xs text-on-surface-variant">
-          Runs the extraction script (Azure OpenAI) via the local API. Start{" "}
-          <code className="rounded bg-surface-container-high px-1 py-0.5 text-[10px]">
-            uvicorn api_server:app --reload --port 8000
-          </code>{" "}
-          from the project root if you see a connection error.
+          Demo mode uses a hardcoded extraction. Set <code className="rounded bg-surface-container-high px-1 py-0.5 text-[10px]">USE_REAL_EXTRACTION=true</code> in{" "}
+          <code className="text-[10px]">frontend/.env.local</code> to call Python + Azure instead.
         </p>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AssessmentStepNav } from "@/components/AssessmentStepNav";
 import { MaterialIcon } from "@/components/MaterialIcon";
 import {
+  CONFIRMED_STORAGE_KEY,
   EXTRACTION_STORAGE_KEY,
   type ExtractionPayload,
   type ExtractedPatientRecord,
@@ -13,8 +14,6 @@ import {
   ageDaysToYears,
   yearsToAgeDays,
 } from "@/lib/patient-extraction";
-
-const CONFIRMED_STORAGE_KEY = "cardio_assessment_confirmed_v1";
 
 const heroImage =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuBQM10yCN3-sZhbLzMzdOxK3MIs9ePqnw-NGmfa4N7hkyg6u-PgB60ZJBMNxDysE_fIC6td3ozJxwhoKJkwLtYtUvChonNRLRyYBbbSq36w5M7JGJfF5j6V7ZcgWS3-reejEv67cG5eYkjN4u4A50sXujFEmJcUgFUKWbZvlwT1wImLAudo6sVaxX6_vS_jRsSoJ_nbQijuwwFCatLX3kPOv2BMfdDSEjttPmDX6XL_DYi1hAUljiGIpTrfolIQMFWcq6g1W9chV2s";
