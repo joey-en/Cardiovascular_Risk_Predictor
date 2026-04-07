@@ -68,31 +68,23 @@ def build_case_markdown(
 """
 
 
-def generate_doctor_report(
-    user_query: str,
-    extracted_features: dict[str, Any],
-    prediction_label: str,
-    prediction_probability: float | None = None,
-    model_explanation: dict[str, Any] | None = None,
-) -> str:
-    """Generates a doctor-readable markdown report from case data and prediction context."""
-    client = _get_client()
+def _load_text_file(path: str | None) -> str | None:
+    if not path:
+        return None
+    file_path = Path(path)
+    if not file_path.exists():
+        raise FileNotFoundError(f"Text file not found: {path}")
+    return file_path.read_text(encoding="utf-8")
 
-    case_markdown = build_case_markdown(
-        user_query=user_query,
-        extracted_features=extracted_features,
-        prediction_label=prediction_label,
-        prediction_probability=prediction_probability,
-        model_explanation=model_explanation,
-    )
+
+def generate_doctor_report(case_markdown: str) -> str:
+    """Generates a doctor-readable markdown report from a prepared case markdown payload."""
+    client = _get_client()
 
     system_prompt = """
 You are a clinical ML reporting assistant specialized in cardiovascular disease risk prediction.
-You will receive a markdown case file with:
-1) patient query,
-2) extracted structured features,
-3) cardiovascular disease model prediction,
-4) explainability data (if available).
+You will receive a markdown case file containing a patient query, extracted features,
+cardiovascular disease model prediction, and explainability data such as SHAP values.
 
 Write a concise doctor-facing report in markdown with the following sections:
 - Patient Summary
@@ -148,29 +140,40 @@ def _load_json_file(path: str | None) -> dict[str, Any] | None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Generate a doctor-facing markdown report from patient query + model prediction."
+        description="Generate a doctor-facing markdown report from a prepared cardiovascular case markdown payload."
     )
-    parser.add_argument("--query", required=True, help="Natural-language patient description.")
+    input_group = parser.add_mutually_exclusive_group(required=True)
+    input_group.add_argument(
+        "--case-markdown-file",
+        default=None,
+        help="Path to a markdown file containing the patient query, extracted features, prediction, and SHAP values.",
+    )
+    input_group.add_argument(
+        "--case-markdown",
+        default=None,
+        help="Inline markdown payload containing the patient query, extracted features, prediction, and SHAP values.",
+    )
+    parser.add_argument("--query", default=None, help="Optional natural-language patient description for legacy mode.")
     parser.add_argument(
         "--prediction",
-        required=True,
-        help="Cardiovascular disease prediction label (example: 'cardio_disease' or 'no_cardio_disease').",
+        default=None,
+        help="Optional cardiovascular disease prediction label for legacy mode.",
     )
     parser.add_argument(
         "--probability",
         type=float,
         default=None,
-        help="Optional model predicted probability for the positive class.",
+        help="Optional model predicted probability for the positive class in legacy mode.",
     )
     parser.add_argument(
         "--features-json",
         default=None,
-        help="Optional path to extracted features JSON. If omitted, features are extracted from query.",
+        help="Optional path to extracted features JSON for legacy mode.",
     )
     parser.add_argument(
         "--explainability-json",
         default=None,
-        help="Optional path to explainability JSON (for example SHAP values or feature importances).",
+        help="Optional path to explainability JSON for legacy mode (for example SHAP values or feature importances).",
     )
     parser.add_argument(
         "--output",
@@ -180,19 +183,28 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    extracted_features = _load_json_file(args.features_json)
-    if extracted_features is None:
-        extracted_features = extract_patient_data(args.query)
+    if args.case_markdown_file or args.case_markdown:
+        case_markdown = args.case_markdown if args.case_markdown else _load_text_file(args.case_markdown_file)
+        if not case_markdown:
+            raise ValueError("Case markdown input was empty.")
+    else:
+        if not args.query or not args.prediction:
+            raise ValueError("Legacy mode requires --query and --prediction when no markdown input is provided.")
 
-    model_explanation = _load_json_file(args.explainability_json)
+        extracted_features = _load_json_file(args.features_json)
+        if extracted_features is None:
+            extracted_features = extract_patient_data(args.query)
 
-    report = generate_doctor_report(
-        user_query=args.query,
-        extracted_features=extracted_features,
-        prediction_label=args.prediction,
-        prediction_probability=args.probability,
-        model_explanation=model_explanation,
-    )
+        model_explanation = _load_json_file(args.explainability_json)
+        case_markdown = build_case_markdown(
+            user_query=args.query,
+            extracted_features=extracted_features,
+            prediction_label=args.prediction,
+            prediction_probability=args.probability,
+            model_explanation=model_explanation,
+        )
+
+    report = generate_doctor_report(case_markdown)
 
     output_file = save_report(report, args.output)
 
