@@ -47,6 +47,15 @@ def build_case_markdown(
         else "No feature-level explanation data was provided."
     )
 
+    # Extract other_information if present
+    other_info = extracted_features.get("other_information", "")
+    other_info_section = ""
+    if other_info:
+        other_info_section = f"""
+## Additional Clinical Information
+{other_info}
+"""
+
     return f"""# Cardiovascular Disease Risk Case Input
 
 ## Original User Query
@@ -64,7 +73,7 @@ def build_case_markdown(
 ## Explainability Data From Model
 ```json
 {explanation_block}
-```
+```{other_info_section}
 """
 
 
@@ -84,10 +93,12 @@ def generate_doctor_report(case_markdown: str) -> str:
     system_prompt = """
 You are a clinical reporting assistant specialized in cardiovascular disease risk assessment.
 You will receive a case file with patient information, clinical features, and cardiovascular disease risk analysis results.
+The case file may include additional clinical symptoms or observations (e.g., swollen feet, shortness of breath, chest pain) which you MUST incorporate into your clinical reasoning.
 
 Write a concise clinical report in markdown for physicians with the following sections:
-- Patient Summary (demographics, vitals, clinical presentation)
+- Patient Summary (demographics, vitals, clinical presentation, and any reported symptoms)
 - Key Cardiovascular Risk Factors (list the clinical risk factors present)
+- Important Clinical Observations (if additional symptoms or observations are provided, discuss them here and their relevance to cardiovascular risk)
 - Clinical Assessment (interpret the cardiovascular disease risk classification)
 - Primary Risk Contributors (explain which clinical factors most strongly influenced the assessment, in plain medical terms—NOT in technical/mathematical language)
 - Recommended Clinical Actions and Follow-up
@@ -97,8 +108,9 @@ Rules:
 - Translate any analytical data (e.g., feature importance) into plain medical insights about which risk factors are most influential.
 - Do not claim certainty or provide definitive diagnosis. Present findings as clinical assessment to guide further evaluation.
 - Focus exclusively on cardiovascular health and clinical implications.
+- Always incorporate additional clinical information (symptoms, observations) into your assessment and recommended follow-up.
 - Keep report professional and suitable for physician review and patient discussion.
-- Keep report length to about 300-400 words.
+- Keep report length to about 350-450 words.
 """.strip()
 
     response = client.chat.completions.create(

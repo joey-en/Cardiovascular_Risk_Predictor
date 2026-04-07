@@ -21,7 +21,8 @@ client = AzureOpenAI(
 
 def extract_patient_data(query: str) -> dict:
     """
-    Extracts cardiovascular features from a natural language query using Azure OpenAI.
+    Extracts cardiovascular features and additional clinical information from a natural language query.
+    Returns structured features and any additional symptoms/observations.
     """
     
     system_prompt = """
@@ -40,15 +41,16 @@ def extract_patient_data(query: str) -> dict:
     - `smoke`: 1 if they smoke, 0 if they do not.
     - `alco`: 1 if they drink alcohol, 0 if they do not.
     - `active`: 1 if they are physically active, 0 if they are not.
+    - `other_information`: Any additional clinical symptoms, observations, or notes not covered above (e.g., "swollen feet", "reports indigestion", "family history of heart disease"). If nothing else is mentioned, put empty string.
     
     Respond ONLY with a JSON object containing the extracted properties. Do not include markdown formatting or explanations.
     """
     
     few_shot_examples = [
         {"role": "user", "content": "I am a 45-year-old man, 175cm tall, weighing 80kg. My blood pressure is 130/85. I have normal cholesterol and glucose levels. I don't smoke or drink alcohol, and I am physically active."},
-        {"role": "assistant", "content": '{"age": 16436, "gender": 2, "height": 175, "weight": 80.0, "ap_hi": 130, "ap_lo": 85, "cholesterol": 1, "gluc": 1, "smoke": 0, "alco": 0, "active": 1}'},
-        {"role": "user", "content": "A 30-year-old female, 160cm, 55kg, BP 110/70, active, nonsmoker. She has high cholesterol but normal glucose."},
-        {"role": "assistant", "content": '{"age": 10958, "gender": 1, "height": 160, "weight": 55.0, "ap_hi": 110, "ap_lo": 70, "cholesterol": 2, "gluc": 1, "smoke": 0, "alco": 0, "active": 1}'}
+        {"role": "assistant", "content": '{"age": 16436, "gender": 2, "height": 175, "weight": 80.0, "ap_hi": 130, "ap_lo": 85, "cholesterol": 1, "gluc": 1, "smoke": 0, "alco": 0, "active": 1, "other_information": ""}'},
+        {"role": "user", "content": "A 30-year-old female, 160cm, 55kg, BP 110/70, active, nonsmoker. She has high cholesterol but normal glucose. Reports occasional chest discomfort and swollen ankles."},
+        {"role": "assistant", "content": '{"age": 10958, "gender": 1, "height": 160, "weight": 55.0, "ap_hi": 110, "ap_lo": 70, "cholesterol": 2, "gluc": 1, "smoke": 0, "alco": 0, "active": 1, "other_information": "Occasional chest discomfort; swollen ankles"}'}
     ]
     
     messages = [{"role": "system", "content": system_prompt}] + few_shot_examples + [{"role": "user", "content": query}]
@@ -69,13 +71,17 @@ def extract_patient_data(query: str) -> dict:
         
     extracted_data = json.loads(response_content)
     
+    # Ensure other_information exists
+    if "other_information" not in extracted_data:
+        extracted_data["other_information"] = ""
+    
     # Generate a random ID (as the dataset has an ID column)
     extracted_data["id"] = random.randint(100000, 999999)
     
     return extracted_data
 
 if __name__ == "__main__":
-    test_query = "My patient is a 50 year old woman. She weighs 70kg and is 165cm tall. Her blood pressure is 120 over 80. She doesn't smoke or drink, exercises regularly, and has completely normal blood work."
+    test_query = "My patient is a 50 year old woman. She weighs 70kg and is 165cm tall. Her blood pressure is 120 over 80. She doesn't smoke or drink, exercises regularly, and has completely normal blood work. She reports occasional shortness of breath when climbing stairs."
     print("Testing query:", test_query)
     
     try:
@@ -83,7 +89,7 @@ if __name__ == "__main__":
         print("Extracted Data:", json.dumps(result, indent=2))
         
         # Formatting as a CSV row
-        columns = ["id", "age", "gender", "height", "weight", "ap_hi", "ap_lo", "cholesterol", "gluc", "smoke", "alco", "active"]
+        columns = ["id", "age", "gender", "height", "weight", "ap_hi", "ap_lo", "cholesterol", "gluc", "smoke", "alco", "active", "other_information"]
         csv_row = ";".join([str(result.get(col, "")) for col in columns])
         print("\nAs CSV Row (ready for cardio_train.csv):")
         print(csv_row)
