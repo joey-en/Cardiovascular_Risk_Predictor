@@ -205,3 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Next.js frontend (see also frontend/.gitignore)
+frontend/.next/
+frontend/out/
+frontend/node_modules/
