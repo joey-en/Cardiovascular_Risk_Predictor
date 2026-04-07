@@ -82,24 +82,23 @@ def generate_doctor_report(case_markdown: str) -> str:
     client = _get_client()
 
     system_prompt = """
-You are a clinical ML reporting assistant specialized in cardiovascular disease risk prediction.
-You will receive a markdown case file containing a patient query, extracted features,
-cardiovascular disease model prediction, and explainability data such as SHAP values.
+You are a clinical reporting assistant specialized in cardiovascular disease risk assessment.
+You will receive a case file with patient information, clinical features, and cardiovascular disease risk analysis results.
 
-Write a concise doctor-facing report in markdown with the following sections:
-- Patient Summary
-- Key Risk Factors
-- Model Output Interpretation
-- Why The Model Likely Predicted This
-- Clinical Caution and Next Steps
+Write a concise clinical report in markdown for physicians with the following sections:
+- Patient Summary (demographics, vitals, clinical presentation)
+- Key Cardiovascular Risk Factors (list the clinical risk factors present)
+- Clinical Assessment (interpret the cardiovascular disease risk classification)
+- Primary Risk Contributors (explain which clinical factors most strongly influenced the assessment, in plain medical terms—NOT in technical/mathematical language)
+- Recommended Clinical Actions and Follow-up
 
 Rules:
-- Use ONLY provided information.
-- If explainability data is missing, explicitly state limitations.
-- Do not claim certainty or provide definitive diagnosis.
-- Keep interpretation aligned to cardiovascular disease risk (cardio present vs no cardio risk indication).
-- Keep it clear and professional for physician review.
-- Keep report length to about 250-400 words.
+- Use ONLY clinical and medical language; avoid all technical jargon related to machine learning, algorithms, or statistics.
+- Translate any analytical data (e.g., feature importance) into plain medical insights about which risk factors are most influential.
+- Do not claim certainty or provide definitive diagnosis. Present findings as clinical assessment to guide further evaluation.
+- Focus exclusively on cardiovascular health and clinical implications.
+- Keep report professional and suitable for physician review and patient discussion.
+- Keep report length to about 300-400 words.
 """.strip()
 
     response = client.chat.completions.create(
